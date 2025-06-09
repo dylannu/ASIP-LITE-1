@@ -9,11 +9,6 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    # All 'run:' steps below will execute in the ASIP-LITE-1 subfolder
-    defaults:
-      run:
-        working-directory: ASIP-LITE-1
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -32,7 +27,7 @@ jobs:
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v20
         with:
-          vercel-token:     ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id:    ${{ secrets.VERCEL_ORG_ID }}
+          vercel-token:      ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id:     ${{ secrets.VERCEL_ORG_ID }}
           vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args:      '--prod'
+          vercel-args:       '--prod'
