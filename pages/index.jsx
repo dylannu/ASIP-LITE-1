@@ -24,84 +24,95 @@ ChartJS.register(
 );
 
 export default function Home() {
-  // ─── Auth State ───
+  // Auth / Login
   const [isAuthed, setIsAuthed] = useState(false);
-  const [user, setUser]   = useState('');
-  const [pass, setPass]   = useState('');
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
   const [loginErr, setLoginErr] = useState('');
 
-  // ─── Compare Toggle ───
+  // Compare toggle
   const [compareMode, setCompareMode] = useState(false);
 
-  // ─── Inputs A ───
+  // Company A inputs
   const [company1, setCompany1] = useState('');
-  const [growth1,  setGrowth1]  = useState('');
-  const [tam1,     setTam1]     = useState('');
-  const [rev1,     setRev1]     = useState('');
+  const [growth1, setGrowth1] = useState('');
+  const [tam1, setTam1] = useState('');
+  const [rev1, setRev1] = useState('');
 
-  // ─── Inputs B ───
+  // Company B inputs
   const [company2, setCompany2] = useState('');
-  const [growth2,  setGrowth2]  = useState('');
-  const [tam2,     setTam2]     = useState('');
-  const [rev2,     setRev2]     = useState('');
+  const [growth2, setGrowth2] = useState('');
+  const [tam2, setTam2] = useState('');
+  const [rev2, setRev2] = useState('');
 
-  // ─── Results & Forecasts ───
+  // Results / forecasts
   const [res1, setRes1] = useState(null);
   const [res2, setRes2] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [compareForecast, setCompareForecast] = useState(null);
   const csvRef = useRef();
 
-  // ─── Rating Helpers ───
-  const rateGrowth = g => g <= 0 ? 1 : g <= 20 ? 3 : g <= 50 ? 5 : g <= 100 ? 7 : g <= 200 ? 9 : 10;
-  const rateTam    = t => t < 100 ? 1 : t < 500 ? 3 : t < 1000 ? 5 : t < 5000 ? 7 : 10;
-  const ratePen    = (r,t) => {
-    const p = (r/t)*100;
+  // Rating helpers
+  const rateGrowth = g =>
+    g <= 0 ? 1 : g <= 20 ? 3 : g <= 50 ? 5 : g <= 100 ? 7 : g <= 200 ? 9 : 10;
+  const rateTam = t =>
+    t < 100 ? 1 : t < 500 ? 3 : t < 1000 ? 5 : t < 5000 ? 7 : 10;
+  const ratePen = (r, t) => {
+    const p = (r / t) * 100;
     return p < 0.1 ? 1 : p < 1 ? 3 : p < 5 ? 5 : p < 10 ? 7 : 10;
   };
 
-  // ─── Analysis Helpers ───
+  // Analysis text
   const analyzeGrowth = g =>
-    g <= 0   ? '⚠️ No growth—urgent pivot.' :
-    g < 25   ? '🔻 Low growth—boost acquisition & pricing.' :
-    g < 75   ? '🔸 Moderate growth—optimize channels.' :
-               '✅ High growth—scale operations.';
+    g <= 0
+      ? '⚠️ No growth—urgent pivot.'
+      : g < 25
+      ? '🔻 Low growth—boost acquisition & pricing.'
+      : g < 75
+      ? '🔸 Moderate growth—optimize channels.'
+      : '✅ High growth—scale operations.';
   const analyzeTam = t =>
-    t < 100   ? '⚠️ Tiny TAM—adjacent markets.' :
-    t < 500   ? '🔻 Small TAM—explore niches.' :
-    t < 1000  ? '🔸 Medium TAM—good scaling.' :
-    t < 5000  ? '✅ Large TAM—high upside.' :
-               '🚀 Massive TAM—prime aggressive growth.';
-  const analyzePen = (r,t) => {
-    const p = (r/t)*100;
-    return p < 0.1  ? '⚠️ Minimal traction—intensify GTM.' :
-           p < 1    ? '🔻 Early traction—refine PMF.' :
-           p < 5    ? '🔸 Good traction—expand segments.' :
-                     '✅ Strong traction—leverage pricing.';
+    t < 100
+      ? '⚠️ Tiny TAM—adjacent markets.'
+      : t < 500
+      ? '🔻 Small TAM—explore niches.'
+      : t < 1000
+      ? '🔸 Medium TAM—good scaling.'
+      : t < 5000
+      ? '✅ Large TAM—high upside.'
+      : '🚀 Massive TAM—prime aggressive growth.';
+  const analyzePen = (r, t) => {
+    const p = (r / t) * 100;
+    return p < 0.1
+      ? '⚠️ Minimal traction—intensify GTM.'
+      : p < 1
+      ? '🔻 Early traction—refine PMF.'
+      : p < 5
+      ? '🔸 Good traction—expand segments.'
+      : '✅ Strong traction—leverage pricing.';
   };
 
-  // ─── Simple Forecast ───
-  // returns { years: [0..20], revs: [r*1.0, r*(1+g)^1, ..., r*(1+g)^20] }
+  // Build revenue forecast
   const makeForecast = (g, start) => {
     const years = Array.from({ length: 21 }, (_, i) => i);
-    const revs  = years.map(y => start * (1 + g/100) ** y);
+    const revs = years.map(y => start * (1 + g / 100) ** y);
     return { years, revs };
   };
 
-  // ─── Recommendation ───
-  const makeRec = (gR,tR,pR) => {
-    const mn = Math.min(gR,tR,pR);
-    return mn===gR
+  // Recommendation text
+  const makeRec = (gR, tR, pR) => {
+    const mn = Math.min(gR, tR, pR);
+    return mn === gR
       ? 'Accelerate top-line growth.'
-      : mn===tR
+      : mn === tR
       ? 'Reevaluate TAM strategy.'
       : 'Boost penetration efforts.';
   };
 
-  // ─── Handlers ───
+  // Login handler
   const handleLogin = e => {
     e.preventDefault();
-    if (user==='Rollingthunderventures' && pass==='ADMIN1') {
+    if (user === 'Rollingthunderventures' && pass === 'ADMIN1') {
       setIsAuthed(true);
       setLoginErr('');
     } else {
@@ -109,15 +120,22 @@ export default function Home() {
     }
   };
 
+  // Calculate handler
   const handleCalculate = e => {
     e.preventDefault();
-    const parseInv = (c,g,t,r) => {
-      const gF=parseFloat(g), tF=parseFloat(t), rF=parseFloat(r);
-      if (!c||isNaN(gF)||isNaN(tF)||isNaN(rF)) throw 0;
-      const gR=rateGrowth(gF), tR=rateTam(tF), pR=ratePen(rF,tF),
-            score=(gR*0.4 + tR*0.3 + pR*0.3).toFixed(1),
-            rec=makeRec(gR,tR,pR);
-      return { name:c, gF,tF,rF,gR,tR,pR,score,rec };
+
+    // Parse & rate an investment
+    const parseInv = (c, g, t, r) => {
+      const gF = parseFloat(g),
+        tF = parseFloat(t),
+        rF = parseFloat(r);
+      if (!c || isNaN(gF) || isNaN(tF) || isNaN(rF)) throw new Error();
+      const gR = rateGrowth(gF),
+        tR = rateTam(tF),
+        pR = ratePen(rF, tF),
+        score = (gR * 0.4 + tR * 0.3 + pR * 0.3).toFixed(1),
+        rec = makeRec(gR, tR, pR);
+      return { name: c, gF, tF, rF, gR, tR, pR, score, rec };
     };
 
     try {
@@ -125,13 +143,11 @@ export default function Home() {
       setRes1(r1);
 
       if (compareMode) {
-        // clear single-mode data
         setForecast(null);
-
         const r2 = parseInv(company2, growth2, tam2, rev2);
         setRes2(r2);
 
-        // build 5× valuation forecasts in $M
+        // Build 5× valuation forecasts
         const f1 = makeForecast(r1.gF, r1.rF);
         const f2 = makeForecast(r2.gF, r2.rF);
 
@@ -143,13 +159,12 @@ export default function Home() {
           ],
         });
       } else {
-        // clear compare-mode data
         setRes2(null);
         setCompareForecast(null);
 
-        // single mode: build 3×–12× but plotted on revenue values
+        // Single: multi-multiple in $M
         const base = makeForecast(r1.gF, r1.rF);
-        const multiples = [3,5,7,9,12];
+        const multiples = [3, 5, 7, 9, 12];
         const dataSets = multiples.map(m => ({
           label: `${m}×`,
           data: base.revs.map(v => v * m),
@@ -161,10 +176,19 @@ export default function Home() {
     }
   };
 
+  // CSV copy
   const handleCopy = () => {
-    const rows = compareMode && res2
-      ? [['Company','Score'],[res1.name,res1.score],[res2.name,res2.score]]
-      : [['Company','Score'],[res1.name,res1.score]];
+    const rows =
+      compareMode && res2
+        ? [
+            ['Company', 'Score'],
+            [res1.name, res1.score],
+            [res2.name, res2.score],
+          ]
+        : [
+            ['Company', 'Score'],
+            [res1.name, res1.score],
+          ];
     const csv = rows.map(r => r.join(',')).join('\n');
     csvRef.current.value = csv;
     csvRef.current.select();
@@ -172,13 +196,13 @@ export default function Home() {
     alert('CSV copied!');
   };
 
-  // ─── Render ───
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-      {/* LOGIN */}
       {!isAuthed ? (
-        <form onSubmit={handleLogin}
-              className="bg-gray-800 p-8 rounded-3xl shadow-xl w-full max-w-sm space-y-6">
+        <form
+          onSubmit={handleLogin}
+          className="bg-gray-800 p-8 rounded-3xl shadow-xl w-full max-w-sm space-y-6"
+        >
           <h2 className="text-2xl font-bold text-center text-white">
             AISF-Lite by Rolling Thunder Ventures
           </h2>
@@ -226,10 +250,11 @@ export default function Home() {
             </label>
           </div>
 
-          {/* Inputs Grid */}
-          <form onSubmit={handleCalculate}
-                className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Investment A */}
+          {/* Inputs */}
+          <form
+            onSubmit={handleCalculate}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+          >
             <div className="bg-gray-700 p-6 rounded-2xl space-y-4 max-w-md mx-auto">
               {compareMode && (
                 <h2 className="text-xl font-semibold text-white text-center">
@@ -268,7 +293,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Investment B or placeholder */}
             {compareMode ? (
               <div className="bg-gray-700 p-6 rounded-2xl space-y-4 max-w-md mx-auto">
                 <h2 className="text-xl font-semibold text-white text-center">
@@ -309,7 +333,6 @@ export default function Home() {
               <div />
             )}
 
-            {/* Calculate Button */}
             <div className="md:col-span-2 text-center">
               <button
                 type="submit"
@@ -323,10 +346,9 @@ export default function Home() {
           {/* Results */}
           {res1 && (
             <div className="space-y-6">
-              {/* Compare Mode */}
               {compareMode && res2 ? (
                 <>
-                  {/* Side-by-side Analyses */}
+                  {/* Analysis Cards */}
                   <div className="grid md:grid-cols-2 gap-6">
                     {[res1, res2].map((r, i) => (
                       <div key={i} className="bg-gray-700 p-6 rounded-2xl">
@@ -349,7 +371,7 @@ export default function Home() {
                     ))}
                   </div>
 
-                  {/* 5× Valuation Comparison Chart */}
+                  {/* Compare Chart */}
                   {compareForecast && (
                     <div className="bg-gray-700 p-6 rounded-2xl">
                       <h3 className="text-lg font-semibold text-white mb-2">
@@ -386,7 +408,11 @@ export default function Home() {
                               ticks: { color: '#bbb' },
                             },
                             y: {
-                              title: { display: true, text: 'Valuation ($M)', color: '#ddd' },
+                              title: {
+                                display: true,
+                                text: 'Valuation ($M)',
+                                color: '#ddd',
+                              },
                               ticks: { color: '#bbb' },
                             },
                           },
@@ -395,15 +421,15 @@ export default function Home() {
                     </div>
                   )}
 
-                  {/* Winner Summary */}
+                  {/* Winner */}
                   <div className="bg-gray-700 p-6 rounded-2xl text-gray-200">
                     <h3 className="text-lg font-semibold text-white mb-2">
                       Recommendation
                     </h3>
                     {res1.score === res2.score ? (
                       <p>
-                        Both tie at <strong>{res1.score}</strong>. Consider
-                        other factors.
+                        Both tie at <strong>{res1.score}</strong>. Consider other
+                        factors.
                       </p>
                     ) : (
                       <p>
@@ -423,17 +449,14 @@ export default function Home() {
                   </div>
                 </>
               ) : (
-                /* Single Mode */
                 <>
-                  {/* Analysis Cards */}
+                  {/* Single Analysis */}
                   <div className="grid md:grid-cols-3 gap-6">
                     <div className="bg-gray-700 p-6 rounded-2xl">
                       <h3 className="text-lg font-semibold text-white mb-1">
                         Growth
                       </h3>
-                      <p className="text-gray-200">
-                        {analyzeGrowth(res1.gF)}
-                      </p>
+                      <p className="text-gray-200">{analyzeGrowth(res1.gF)}</p>
                     </div>
                     <div className="bg-gray-700 p-6 rounded-2xl">
                       <h3 className="text-lg font-semibold text-white mb-1">
@@ -451,7 +474,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Multi-Multiple Forecast Chart */}
+                  {/* Multi-Multiple Chart */}
                   {forecast && (
                     <div className="bg-gray-700 p-6 rounded-2xl">
                       <h3 className="text-lg font-semibold text-white mb-2">
@@ -502,7 +525,7 @@ export default function Home() {
                 </>
               )}
 
-              {/* Export CSV */}
+              {/* CSV */}
               <div className="flex justify-end">
                 <button
                   onClick={handleCopy}
