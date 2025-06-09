@@ -24,95 +24,84 @@ ChartJS.register(
 );
 
 export default function Home() {
-  // Auth state
+  // ─── Auth State ───
   const [isAuthed, setIsAuthed] = useState(false);
-  const [user, setUser] = useState('');
-  const [pass, setPass] = useState('');
+  const [user, setUser]   = useState('');
+  const [pass, setPass]   = useState('');
   const [loginErr, setLoginErr] = useState('');
 
-  // Compare mode toggle
+  // ─── Compare Toggle ───
   const [compareMode, setCompareMode] = useState(false);
 
-  // Inputs A
+  // ─── Inputs A ───
   const [company1, setCompany1] = useState('');
-  const [growth1, setGrowth1] = useState('');
-  const [tam1, setTam1] = useState('');
-  const [rev1, setRev1] = useState('');
+  const [growth1, setGrowth1]   = useState('');
+  const [tam1,    setTam1]      = useState('');
+  const [rev1,    setRev1]      = useState('');
 
-  // Inputs B
+  // ─── Inputs B ───
   const [company2, setCompany2] = useState('');
-  const [growth2, setGrowth2] = useState('');
-  const [tam2, setTam2] = useState('');
-  const [rev2, setRev2] = useState('');
+  const [growth2, setGrowth2]   = useState('');
+  const [tam2,    setTam2]      = useState('');
+  const [rev2,    setRev2]      = useState('');
 
-  // Results & forecasts
+  // ─── Results & Forecasts ───
   const [res1, setRes1] = useState(null);
   const [res2, setRes2] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [compareForecast, setCompareForecast] = useState(null);
   const csvRef = useRef();
 
-  // Rating helpers
-  const rateGrowth = g =>
-    g <= 0 ? 1 : g <= 20 ? 3 : g <= 50 ? 5 : g <= 100 ? 7 : g <= 200 ? 9 : 10;
-  const rateTam = t =>
-    t < 100 ? 1 : t < 500 ? 3 : t < 1000 ? 5 : t < 5000 ? 7 : 10;
-  const ratePen = (r, t) => {
-    const p = (r / t) * 100;
+  // ─── Rating Helpers ───
+  const rateGrowth = g => g <= 0 ? 1 : g <= 20 ? 3 : g <= 50 ? 5 : g <= 100 ? 7 : g <= 200 ? 9 : 10;
+  const rateTam    = t => t < 100 ? 1 : t < 500 ? 3 : t < 1000 ? 5 : t < 5000 ? 7 : 10;
+  const ratePen    = (r,t) => {
+    const p = (r/t)*100;
     return p < 0.1 ? 1 : p < 1 ? 3 : p < 5 ? 5 : p < 10 ? 7 : 10;
   };
 
-  // Analysis helpers
+  // ─── Analysis Helpers ───
   const analyzeGrowth = g =>
-    g <= 0
-      ? '⚠️ No growth—urgent pivot.'
-      : g < 25
-      ? '🔻 Low growth—boost acquisition & pricing.'
-      : g < 75
-      ? '🔸 Moderate growth—optimize channels.'
-      : '✅ High growth—scale operations.';
+    g <= 0   ? '⚠️ No growth—urgent pivot.' :
+    g < 25   ? '🔻 Low growth—boost acquisition & pricing.' :
+    g < 75   ? '🔸 Moderate growth—optimize channels.' :
+               '✅ High growth—scale operations.';
   const analyzeTam = t =>
-    t < 100
-      ? '⚠️ Tiny TAM—adjacent markets.'
-      : t < 500
-      ? '🔻 Small TAM—explore niches.'
-      : t < 1000
-      ? '🔸 Medium TAM—good scaling.'
-      : t < 5000
-      ? '✅ Large TAM—high upside.'
-      : '🚀 Massive TAM—prime aggressive growth.';
-  const analyzePen = (r, t) => {
-    const p = (r / t) * 100;
-    return p < 0.1
-      ? '⚠️ Minimal traction—intensify GTM.'
-      : p < 1
-      ? '🔻 Early traction—refine PMF.'
-      : p < 5
-      ? '🔸 Good traction—expand segments.'
-      : '✅ Strong traction—leverage pricing.';
+    t < 100   ? '⚠️ Tiny TAM—adjacent markets.' :
+    t < 500   ? '🔻 Small TAM—explore niches.' :
+    t < 1000  ? '🔸 Medium TAM—good scaling.' :
+    t < 5000  ? '✅ Large TAM—high upside.' :
+               '🚀 Massive TAM—prime aggressive growth.';
+  const analyzePen = (r,t) => {
+    const p = (r/t)*100;
+    return p < 0.1  ? '⚠️ Minimal traction—intensify GTM.' :
+           p < 1    ? '🔻 Early traction—refine PMF.' :
+           p < 5    ? '🔸 Good traction—expand segments.' :
+                     '✅ Strong traction—leverage pricing.';
   };
 
-  // Forecast generator
-  const makeForecast = (g, start) => {
-    const years = Array.from({ length: 21 }, (_, i) => i);
-    const revs = years.map((y) => start * (1 + g / 100) ** y);
-    return { years, revs };
+  // ─── Exponential Forecast (1×→multiple) ───
+  const makeCurve = (multiple) => {
+    const years = Array.from({ length: 21 }, (_,i) => i);
+    // y = multiple^(year/20)
+    const vals  = years.map(y => Math.pow(multiple, y/20));
+    return { years, vals };
   };
 
-  // Recommendation
-  const makeRec = (gR, tR, pR) => {
-    const mn = Math.min(gR, tR, pR);
-    return mn === gR
+  // ─── Recommendation ───
+  const makeRec = (gR,tR,pR) => {
+    const mn = Math.min(gR,tR,pR);
+    return mn===gR
       ? 'Accelerate top-line growth.'
-      : mn === tR
+      : mn===tR
       ? 'Reevaluate TAM strategy.'
       : 'Boost penetration efforts.';
   };
 
-  // Handlers
-  const handleLogin = (e) => {
+  // ─── Handlers ───
+  const handleLogin = e => {
     e.preventDefault();
-    if (user === 'Rollingthunderventures' && pass === 'ADMIN1') {
+    if (user==='Rollingthunderventures' && pass==='ADMIN1') {
       setIsAuthed(true);
       setLoginErr('');
     } else {
@@ -120,53 +109,45 @@ export default function Home() {
     }
   };
 
-  const handleCalculate = (e) => {
+  const handleCalculate = e => {
     e.preventDefault();
-    const parseInv = (c, g, t, r) => {
-      const gF = parseFloat(g),
-        tF = parseFloat(t),
-        rF = parseFloat(r);
-      if (!c || isNaN(gF) || isNaN(tF) || isNaN(rF)) throw 0;
-      const gR = rateGrowth(gF),
-        tR = rateTam(tF),
-        pR = ratePen(rF, tF),
-        score = (gR * 0.4 + tR * 0.3 + pR * 0.3).toFixed(1),
-        rec = makeRec(gR, tR, pR);
-      return { name: c, gF, tF, rF, gR, tR, pR, score, rec };
+    const parseInv = (c,g,t,r) => {
+      const gF=parseFloat(g), tF=parseFloat(t), rF=parseFloat(r);
+      if (!c||isNaN(gF)||isNaN(tF)||isNaN(rF)) throw 0;
+      const gR=rateGrowth(gF), tR=rateTam(tF), pR=ratePen(rF,tF),
+            score=(gR*0.4 + tR*0.3 + pR*0.3).toFixed(1),
+            rec=makeRec(gR,tR,pR);
+      return { name:c, gF,tF,rF,gR,tR,pR,score,rec };
     };
 
     try {
       const r1 = parseInv(company1, growth1, tam1, rev1);
       setRes1(r1);
-
+      // clear old results on mode switch
       if (compareMode) {
+        setForecast(null);
         const r2 = parseInv(company2, growth2, tam2, rev2);
         setRes2(r2);
-
-        const base1 = makeForecast(r1.gF, r1.rF);
-        const base2 = makeForecast(r2.gF, r2.rF);
+        // only 5× compare per original spec
+        const c1 = makeCurve(5);
+        const c2 = makeCurve(5);
         setCompareForecast({
-          years: base1.years,
+          years: c1.years,
           datasets: [
-            {
-              label: r1.name,
-              data: base1.revs.map((v) => v * 5 / r1.rF),
-            },
-            {
-              label: r2.name,
-              data: base2.revs.map((v) => v * 5 / r2.rF),
-            },
-          ],
+            { label: r1.name, data: c1.vals },
+            { label: r2.name, data: c2.vals }
+          ]
         });
       } else {
-        const base = makeForecast(r1.gF, r1.rF);
-        setForecast({
-          years: base.years,
-          datasets: [3, 5, 7, 9, 12].map((m) => ({
-            label: `${m}×`,
-            data: base.revs.map((v) => v * m / r1.rF),
-          })),
+        setRes2(null);
+        setCompareForecast(null);
+        // build 5 curves: 3,5,7,9,12
+        const multiples = [3,5,7,9,12];
+        const dataSets = multiples.map(m => {
+          const c = makeCurve(m);
+          return { label:`${m}×`, data:c.vals };
         });
+        setForecast({ years: makeCurve(3).years, datasets:dataSets });
       }
     } catch {
       alert('Please fill all fields correctly.');
@@ -175,29 +156,22 @@ export default function Home() {
 
   const handleCopy = () => {
     const rows = compareMode
-      ? [
-          ['Company', 'Score'],
-          [res1.name, res1.score],
-          [res2.name, res2.score],
-        ]
-      : [
-          ['Company', 'Score'],
-          [res1.name, res1.score],
-        ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
-    csvRef.current.value = csv;
+      ? [['Company','Score'],[res1.name,res1.score],[res2.name,res2.score]]
+      : [['Company','Score'],[res1.name,res1.score]];
+    const csv = rows.map(r=>r.join(',')).join('\n');
+    csvRef.current.value=csv;
     csvRef.current.select();
     document.execCommand('copy');
     alert('CSV copied!');
   };
 
+  // ─── Render ───
   return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+      {/* LOGIN */}
       {!isAuthed ? (
-        <form
-          onSubmit={handleLogin}
-          className="bg-gradient-to-r from-gray-800 to-gray-700 p-8 rounded-3xl shadow-xl w-full max-w-sm space-y-6"
-        >
+        <form onSubmit={handleLogin}
+              className="bg-gray-800 p-8 rounded-3xl shadow-xl w-full max-w-sm space-y-6">
           <h2 className="text-2xl font-bold text-center text-white">
             AISF-Lite by Rolling Thunder Ventures
           </h2>
@@ -205,318 +179,216 @@ export default function Home() {
             className="w-full bg-gray-700 px-4 py-3 rounded-lg text-white placeholder-gray-400"
             placeholder="Username"
             value={user}
-            onChange={(e) => setUser(e.target.value)}
-          />
+            onChange={e=>setUser(e.target.value)} />
           <input
             type="password"
             className="w-full bg-gray-700 px-4 py-3 rounded-lg text-white placeholder-gray-400"
             placeholder="Password"
             value={pass}
-            onChange={(e) => setPass(e.target.value)}
-          />
+            onChange={e=>setPass(e.target.value)} />
           {loginErr && <p className="text-center text-red-400">{loginErr}</p>}
-          <button
-            type="submit"
-            className="w-full bg-green-500 hover:bg-green-400 py-3 rounded-lg text-white font-semibold"
-          >
+          <button type="submit"
+                  className="w-full bg-green-600 hover:bg-green-500 py-3 rounded-lg text-white font-semibold">
             Log In
           </button>
         </form>
       ) : (
-        <div className="bg-gradient-to-r from-gray-800 to-gray-700 p-8 rounded-3xl shadow-xl w-full max-w-4xl space-y-6">
+        <div className="bg-gray-800 p-8 rounded-3xl shadow-xl w-full max-w-4xl space-y-6">
+          {/* header */}
           <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-extrabold text-white">
-              AISF-Lite Evaluator
-            </h1>
-            <label className="flex items-center space-x-2 text-gray-200">
+            <h1 className="text-3xl font-extrabold text-white">AISF-Lite Evaluator</h1>
+            <label className="flex items-center space-x-2 text-gray-300">
               <span>Compare Mode</span>
-              <input
-                type="checkbox"
-                className="form-checkbox h-5 w-5 text-green-400"
-                checked={compareMode}
-                onChange={() => setCompareMode(!compareMode)}
-              />
+              <input type="checkbox"
+                     className="form-checkbox h-5 w-5 text-green-400"
+                     checked={compareMode}
+                     onChange={()=>{
+                       setCompareMode(!compareMode);
+                       // clear old results
+                       setRes2(null);
+                       setForecast(null);
+                       setCompareForecast(null);
+                     }} />
             </label>
           </div>
 
-          <form
-            onSubmit={handleCalculate}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
-            {/* A */}
-            <div
-              className={
-                compareMode
-                  ? 'bg-gray-700 p-6 rounded-2xl space-y-4'
-                  : 'bg-gray-700 p-6 rounded-2xl space-y-4 md:col-span-2 flex justify-center'
-              }
-            >
-              <div className={compareMode ? '' : 'w-full max-w-lg'}>
-                {compareMode && (
-                  <h2 className="text-xl font-semibold text-white text-center mb-2">
-                    Investment A
-                  </h2>
-                )}
-                <input
-                  className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
-                  placeholder="Company Name"
-                  value={company1}
-                  onChange={(e) => setCompany1(e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
-                  placeholder="YoY Growth %"
-                  value={growth1}
-                  onChange={(e) => setGrowth1(e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
-                  placeholder="TAM ($M)"
-                  value={tam1}
-                  onChange={(e) => setTam1(e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  className="w-full bg-gray-600 px-4 py-3 rounded-lg txt-white placeholder-gray-400"
-                  placeholder="Revenue ($M)"
-                  value={rev1}
-                  onChange={(e) => setRev1(e.target.value)}
-                />
-              </div>
+          {/* input grid: always 2 cols */}
+          <form onSubmit={handleCalculate}
+                className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Investment A */}
+            <div className="bg-gray-700 p-6 rounded-2xl space-y-4 max-w-md mx-auto">
+              {compareMode && <h2 className="text-xl font-semibold text-white text-center">Investment A</h2>}
+              <input
+                className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
+                placeholder="Company Name"
+                value={company1}
+                onChange={e=>setCompany1(e.target.value)} />
+              <input type="number" step="0.1"
+                className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
+                placeholder="YoY Growth %"
+                value={growth1}
+                onChange={e=>setGrowth1(e.target.value)} />
+              <input type="number" step="0.1"
+                className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
+                placeholder="TAM ($M)"
+                value={tam1}
+                onChange={e=>setTam1(e.target.value)} />
+              <input type="number" step="0.1"
+                className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
+                placeholder="Revenue ($M)"
+                value={rev1}
+                onChange={e=>setRev1(e.target.value)} />
             </div>
 
-            {/* B */}
-            {compareMode && (
-              <div className="bg-gray-700 p-6 rounded-2xl space-y-4">
-                <h2 className="text-xl font-semibold text-white text-center mb-2">
-                  Investment B
-                </h2>
+            {/* Investment B or empty */}
+            {compareMode ? (
+              <div className="bg-gray-700 p-6 rounded-2xl space-y-4 max-w-md mx-auto">
+                <h2 className="text-xl font-semibold text-white text-center">Investment B</h2>
                 <input
                   className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
                   placeholder="Company Name"
                   value={company2}
-                  onChange={(e) => setCompany2(e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.1"
+                  onChange={e=>setCompany2(e.target.value)} />
+                <input type="number" step="0.1"
                   className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
                   placeholder="YoY Growth %"
                   value={growth2}
-                  onChange={(e) => setGrowth2(e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.1"
+                  onChange={e=>setGrowth2(e.target.value)} />
+                <input type="number" step="0.1"
                   className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
                   placeholder="TAM ($M)"
                   value={tam2}
-                  onChange={(e) => setTam2(e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.1"
+                  onChange={e=>setTam2(e.target.value)} />
+                <input type="number" step="0.1"
                   className="w-full bg-gray-600 px-4 py-3 rounded-lg text-white placeholder-gray-400"
                   placeholder="Revenue ($M)"
                   value={rev2}
-                  onChange={(e) => setRev2(e.target.value)}
-                />
+                  onChange={e=>setRev2(e.target.value)} />
               </div>
+            ) : (
+              <div /> // empty placeholder to keep center alignment
             )}
 
+            {/* calculate button spans both */}
             <div className="md:col-span-2 text-center">
-              <button
-                type="submit"
-                className="bg-green-500 hover:bg-green-400 px-8 py-3 rounded-full text-white font-semibold"
-              >
+              <button type="submit"
+                      className="bg-green-600 hover:bg-green-500 px-8 py-3 rounded-full text-white font-semibold">
                 Calculate
               </button>
             </div>
           </form>
 
-          {/* Results */}
+          {/* results */}
           {res1 && (
             <div className="space-y-6">
               {compareMode ? (
                 <>
-                  {/* Side-by-side analysis */}
+                  {/* two analysis cards */}
                   <div className="grid md:grid-cols-2 gap-6">
-                    {[res1, res2].map((r, i) => (
-                      <div key={i} className="bg-gray-600 p-6 rounded-2xl">
-                        <h3 className="text-xl font-semibold text-white mb-2">
-                          {r.name}
-                        </h3>
-                        <p className="text-gray-200">
-                          <strong>Score:</strong> {r.score}
-                        </p>
-                        <p className="mt-2 text-gray-200">
-                          <strong>Growth:</strong> {analyzeGrowth(r.gF)}
-                        </p>
-                        <p className="mt-1 text-gray-200">
-                          <strong>TAM:</strong> {analyzeTam(r.tF)}
-                        </p>
-                        <p className="mt-1 text-gray-200">
-                          <strong>Penetration:</strong>{' '}
-                          {analyzePen(r.rF, r.tF)}
-                        </p>
+                    {[res1,res2].map((r,i)=>(
+                      <div key={i} className="bg-gray-700 p-6 rounded-2xl">
+                        <h3 className="text-xl font-semibold text-white mb-2">{r.name}</h3>
+                        <p className="text-gray-200"><strong>Score:</strong> {r.score}</p>
+                        <p className="mt-2 text-gray-200"><strong>Growth:</strong> {analyzeGrowth(r.gF)}</p>
+                        <p className="mt-1 text-gray-200"><strong>TAM:</strong> {analyzeTam(r.tF)}</p>
+                        <p className="mt-1 text-gray-200"><strong>Penetration:</strong> {analyzePen(r.rF,r.tF)}</p>
                       </div>
                     ))}
                   </div>
 
-                  {/* 5× comparison chart */}
+                  {/* compare chart (5× only) */}
                   {compareForecast && (
-                    <div className="bg-gray-600 p-6 rounded-2xl">
+                    <div className="bg-gray-700 p-6 rounded-2xl">
                       <h3 className="text-lg font-semibold text-white mb-2">
-                        20-Year @ 5× Exit
+                        20-Year @ 5× Exit (all start at 1×)
                       </h3>
                       <Line
                         data={{
                           labels: compareForecast.years,
-                          datasets: compareForecast.datasets.map(
-                            (ds, idx) => ({
-                              ...ds,
-                              backgroundColor: 'rgba(255,255,255,0.1)',
-                              borderColor:
-                                idx === 0 ? '#4f46e5' : '#10b981',
-                              tension: 0.3,
-                            })
-                          ),
+                          datasets: compareForecast.datasets.map((ds,idx)=>({
+                            ...ds,
+                            backgroundColor:'rgba(255,255,255,0.1)',
+                            borderColor: idx===0?'#4f46e5':'#10b981',
+                            tension:0.3
+                          }))
                         }}
                         options={{
-                          responsive: true,
-                          plugins: {
-                            legend: { labels: { color: '#ddd' } },
-                          },
-                          scales: {
-                            x: {
-                              ticks: { color: '#bbb' },
-                              title: {
-                                display: true,
-                                text: 'Years',
-                                color: '#ddd',
-                              },
-                            },
-                            y: {
-                              ticks: { color: '#bbb' },
-                              title: {
-                                display: true,
-                                text: 'Valuation Multiple',
-                                color: '#ddd',
-                              },
-                            },
-                          },
+                          responsive:true,
+                          plugins:{ legend:{ labels:{ color:'#ddd' } } },
+                          scales:{
+                            x:{ ticks:{ color:'#bbb' }, title:{ display:true,text:'Years',color:'#ddd'} },
+                            y:{ ticks:{ color:'#bbb' }, title:{ display:true,text:'Valuation Multiple',color:'#ddd'} }
+                          }
                         }}
                       />
                     </div>
                   )}
 
-                  {/* Winner summary */}
-                  <div className="bg-gray-600 p-6 rounded-2xl text-gray-200">
-                    <h3 className="text-lg font-semibold text-white mb-2">
-                      Recommendation
-                    </h3>
-                    {res1.score === res2.score ? (
-                      <p>
-                        Both tie at <strong>{res1.score}</strong>. Consider
-                        secondary factors.
-                      </p>
-                    ) : (
-                      <p>
-                        <strong>
-                          {res1.score > res2.score 
-                            ? res1.name 
-                            : res2.name}
-                        </strong>{' '}
-                        wins ({Math.max(res1.score, res2.score)} vs{' '}
-                        {Math.min(res1.score, res2.score)}), strongest on
-                        AISF-Lite metrics.
-                      </p>
-                    )}
+                  {/* winner */}
+                  <div className="bg-gray-700 p-6 rounded-2xl text-gray-200">
+                    <h3 className="text-lg font-semibold text-white mb-2">Recommendation</h3>
+                    {res1.score===res2.score
+                      ? <p>Both tie at <strong>{res1.score}</strong>. Consider other factors.</p>
+                      : <p>
+                          <strong>{res1.score>res2.score ? res1.name : res2.name}</strong>{' '}
+                          wins with a score of{' '}
+                          <strong>
+                            {Math.max(res1.score,res2.score)}
+                          </strong>{' '}
+                          vs{' '}
+                          <strong>
+                            {Math.min(res1.score,res2.score)}
+                          </strong>.
+                        </p>
+                    }
                   </div>
                 </>
               ) : (
                 <>
-                  {/* Single analysis */}
+                  {/* single analysis */}
                   <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-gray-600 p-6 rounded-2xl">
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        Growth
-                      </h3>
-                      <p className="text-gray-200">
-                        {analyzeGrowth(res1.gF)}
-                      </p>
+                    <div className="bg-gray-700 p-6 rounded-2xl">
+                      <h3 className="text-lg font-semibold text-white mb-1">Growth</h3>
+                      <p className="text-gray-200">{analyzeGrowth(res1.gF)}</p>
                     </div>
-                    <div className="bg-gray-600 p-6 rounded-2xl">
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        TAM
-                      </h3>
-                      <p className="text-gray-200">
-                        {analyzeTam(res1.tF)}
-                      </p>
+                    <div className="bg-gray-700 p-6 rounded-2xl">
+                      <h3 className="text-lg font-semibold text-white mb-1">TAM</h3>
+                      <p className="text-gray-200">{analyzeTam(res1.tF)}</p>
                     </div>
-                    <div className="bg-gray-600 p-6 rounded-2xl">
-                      <h3 className="text-lg font-semibold text-white mb-1">
-                        Penetration
-                      </h3>
-                      <p className="text-gray-200">
-                        {analyzePen(res1.rF, res1.tF)}
-                      </p>
+                    <div className="bg-gray-700 p-6 rounded-2xl">
+                      <h3 className="text-lg font-semibold text-white mb-1">Penetration</h3>
+                      <p className="text-gray-200">{analyzePen(res1.rF,res1.tF)}</p>
                     </div>
                   </div>
 
-                  {/* Multi-multiple forecast */}
+                  {/* forecast: 3–12× */}
                   {forecast && (
-                    <div className="bg-gray-600 p-6 rounded-2xl">
+                    <div className="bg-gray-700 p-6 rounded-2xl">
                       <h3 className="text-lg font-semibold text-white mb-2">
-                        20-Year Valuation Multiples
+                        20-Year Valuation Multiples (start 1×→end multiple)
                       </h3>
                       <Line
                         data={{
                           labels: forecast.years,
-                          datasets: forecast.datasets.map((ds) => ({
+                          datasets: forecast.datasets.map(ds=>({
                             ...ds,
-                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            backgroundColor:'rgba(255,255,255,0.1)',
                             borderColor:
-                              ds.label === '3×'
-                                ? '#10b981'
-                                : ds.label === '5×'
-                                ? '#4f46e5'
-                                : ds.label === '7×'
-                                ? '#f59e0b'
-                                : ds.label === '9×'
-                                ? '#ef4444'
-                                : '#3b82f6',
-                            tension: 0.3,
-                          })),
+                              ds.label==='3×'? '#10b981' :
+                              ds.label==='5×'? '#4f46e5' :
+                              ds.label==='7×'? '#f59e0b' :
+                              ds.label==='9×'? '#ef4444' :
+                                               '#3b82f6',
+                            tension:0.3
+                          }))
                         }}
                         options={{
-                          responsive: true,
-                          plugins: {
-                            legend: { labels: { color: '#ddd' } },
-                          },
-                          scales: {
-                            x: {
-                              ticks: { color: '#bbb' },
-                              title: {
-                                display: true,
-                                text: 'Years',
-                                color: '#ddd',
-                              },
-                            },
-                            y: {
-                              ticks: { color: '#bbb' },
-                              title: {
-                                display: true,
-                                text: 'Valuation Multiple',
-                                color: '#ddd',
-                              },
-                            },
-                          },
+                          responsive:true,
+                          plugins:{ legend:{ labels:{ color:'#ddd' } } },
+                          scales:{
+                            x:{ ticks:{ color:'#bbb' }, title:{ display:true,text:'Years',color:'#ddd'} },
+                            y:{ ticks:{ color:'#bbb' }, title:{ display:true,text:'Valuation Multiple',color:'#ddd'} }
+                          }
                         }}
                       />
                     </div>
@@ -524,12 +396,10 @@ export default function Home() {
                 </>
               )}
 
-              {/* CSV Export */}
+              {/* CSV export */}
               <div className="flex justify-end">
-                <button
-                  onClick={handleCopy}
-                  className="bg-blue-500 hover:bg-blue-400 px-6 py-2 rounded-full text-white"
-                >
+                <button onClick={handleCopy}
+                        className="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded-full text-white">
                   Copy CSV
                 </button>
                 <textarea ref={csvRef} className="hidden" />
